@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Checkout - Kids Crafts Shop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>Checkout</h1>
+    <nav>
+      <a href="index.html">Back to Shop</a>
+    </nav>
+  </header>
+  <main style="padding:18px;max-width:720px;margin:0 auto">
+    <section>
+      <h2>Order Summary</h2>
+      <div id="order-list"></div>
+      <div class="cart-total">Total: $<span id="order-total">0.00</span></div>
+    </section>
+
+    <section style="margin-top:18px">
+      <h2>Buyer Info</h2>
+      <form id="orderForm">
+        <label>Full name<br><input name="name" required></label><br>
+        <label>Email<br><input name="email" type="email" required></label><br>
+        <label>Address<br><input name="address" required></label><br>
+        <button type="submit" class="btn-primary">Place Order</button>
+      </form>
+      <div id="order-msg" style="margin-top:12px"></div>
+    </section>
+  </main>
+
+  <!-- Supabase integration: if you provide `supabase-config.js` the checkout will insert orders to Supabase.
+       Otherwise the site falls back to localStorage demo behavior. -->
+    <script src="products.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <script>
+    // load optional config (user-created supabase-config.js)
+    try{ var configScript = document.createElement('script'); configScript.src = 'supabase-config.js'; document.head.appendChild(configScript);}catch(e){}
+
+    function getCart(){try{return JSON.parse(localStorage.getItem('cart'))||[];}catch(e){return []}}
+    function loadProducts(){try{const s=JSON.parse(localStorage.getItem('products')||'null'); if(Array.isArray(s)&&s.length) return s;}catch(e){} return window.DEFAULT_PRODUCTS||[]}
+    const orderList = document.getElementById('order-list');
+    const orderTotal = document.getElementById('order-total');
+    function renderOrder(){
+      const cart = getCart(); const prods = loadProducts(); orderList.innerHTML=''; let total=0;
+      cart.forEach(i=>{ const p = prods.find(x=>x.id===i.id); if(!p) return; const div=document.createElement('div'); div.textContent = `${p.name} — $${p.price.toFixed(2)} x ${i.qty}`; orderList.appendChild(div); total += p.price * i.qty; });
+      orderTotal.textContent = total.toFixed(2);
+    }
+    renderOrder();
+
+    async function submitOrderToSupabase(buyer, cart, total){
+      // expects supabase-config.js to set window.SUPABASE_URL and window.SUPABASE_ANON_KEY
+      if(!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) throw new Error('Supabase config missing');
+      // UMD build exposes different global names depending on version/build — try common ones
+      const createClient = (window.supabase && window.supabase.createClient)
+        || (window.supabaseJs && window.supabaseJs.createClient)
+        || (window.Supabase && window.Supabase.createClient)
+        || (window.supabaseClient && window.supabaseClient.createClient);
+      if(!createClient) throw new Error('Supabase client library not loaded (check CDN script)');
+      const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      // Insert order. Table should have columns: id (uuid), buyer jsonb, items jsonb, total numeric, created timestamptz
+      const payload = { buyer: buyer, items: cart, total: parseFloat(total), created: new Date().toISOString() };
+      const { data, error } = await supabase.from('orders').insert([payload]).select().single();
+      if(error) throw error;
+      // optional: trigger a function/webhook to send confirmation email
+      if(window.SUPABASE_FUNCTION_URL){
+        try{
+          await fetch(window.SUPABASE_FUNCTION_URL, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order:data})});
+        }catch(e){console.warn('Error calling function URL', e)}
+      }
+      return data;
+    }
+
+    document.getElementById('orderForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const form = e.target; const buyer = Object.fromEntries(new FormData(form).entries());
+      const cart = getCart(); if(cart.length===0) return alert('Cart is empty');
+      const total = orderTotal.textContent;
+
+      // If Supabase configured, use it; otherwise fallback to localStorage demo
+      if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY){
+        try{
+          const inserted = await submitOrderToSupabase(buyer, cart, total);
+          localStorage.removeItem('cart'); window.dispatchEvent(new StorageEvent('storage',{key:'cart',newValue:null}));
+          alert('Order confirmed — order id: ' + (inserted.id||inserted.order_id || 'unknown'));
+          window.location.href = 'index.html';
+        }catch(err){
+          console.error(err); alert('Error placing order: '+(err.message||err));
+        }
+      }else{
+        const order = {buyer:buyer,items:cart,total:total,created:new Date().toISOString()};
+        const orders = JSON.parse(localStorage.getItem('orders')||'[]'); orders.push(order); localStorage.setItem('orders',JSON.stringify(orders));
+        localStorage.removeItem('cart'); window.dispatchEvent(new StorageEvent('storage',{key:'cart',newValue:null}));
+        document.getElementById('order-msg').textContent = 'Order placed — thank you! (Saved locally for demo)';
+        window.location.href = 'index.html';
+      }
+    });
+  </script>
+</body>
+</html>

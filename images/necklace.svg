@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="100%" height="100%" fill="#fffaf0"/>
+  <g transform="translate(120,60)">
+    <path d="M80 220 C160 60 320 60 400 220" stroke="#ffb7d5" stroke-width="22" fill="none" stroke-linecap="round"/>
+    <g fill="#ff7aa2">
+      <circle cx="120" cy="160" r="12"/>
+      <circle cx="180" cy="140" r="10"/>
+      <circle cx="240" cy="150" r="14"/>
+      <circle cx="300" cy="170" r="11"/>
+    </g>
+    <text x="0" y="320" font-family="Arial" font-size="32" fill="#333">Bead Necklace</text>
+  </g>
+</svg>

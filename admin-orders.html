@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - Orders</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header"><h1>Admin — Orders</h1><nav><a href="index.html">Shop</a></nav></header>
+  <main style="padding:18px;max-width:1000px;margin:0 auto">
+    <div>
+      <p>This page requires `supabase-config.js` with `SUPABASE_URL` and `SUPABASE_ANON_KEY` set.</p>
+      <div id="orders"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
+  <script>
+    // load optional config
+    var configScript;
+    try{ configScript = document.createElement('script'); configScript.src = 'supabase-config.js'; document.head.appendChild(configScript);}catch(e){configScript = null}
+
+    function showMessage(msg){ const el=document.getElementById('orders'); el.innerHTML = '<p>'+msg+'</p>'; }
+
+    async function fetchOrders(){
+      if(!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return showMessage('Missing Supabase config. Copy supabase-config.example.js to supabase-config.js and set values.');
+      const createClient = (window.supabase && window.supabase.createClient)
+        || (window.supabaseJs && window.supabaseJs.createClient)
+        || (window.Supabase && window.Supabase.createClient)
+        || (window.supabaseClient && window.supabaseClient.createClient);
+      if(!createClient) return showMessage('Supabase client library not loaded (check CDN script).');
+      const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      const { data, error } = await supabase.from('orders').select('*').order('created', {ascending:false});
+      if(error) return showMessage('Error: '+error.message);
+      if(!data || data.length===0) return showMessage('No orders yet.');
+      renderOrders(data);
+    }
+
+    function initAdminOrders(){
+      // ensure config has been applied by the loaded script
+      if(!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY){
+        // if configScript exists try waiting a short time then show message
+        if(configScript){
+          configScript.addEventListener('load', ()=>{
+            // give config a tick to set globals
+            setTimeout(()=>{ fetchOrders(); }, 50);
+          });
+          // also try fetching after small delay in case it already loaded
+          setTimeout(()=>{ if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY) fetchOrders(); }, 150);
+          return showMessage('Loading configuration...');
+        }
+        return showMessage('Missing Supabase config. Copy supabase-config.example.js to supabase-config.js and set values.');
+      }
+      fetchOrders();
+    }
+
+    function renderOrders(list){
+      const container = document.getElementById('orders'); container.innerHTML='';
+      list.forEach(o=>{
+        const wrap = document.createElement('div'); wrap.style.border='1px solid #eee'; wrap.style.padding='12px'; wrap.style.marginBottom='12px';
+        const id = document.createElement('div'); id.innerHTML = `<strong>Order:</strong> ${o.id||o.order_id||''} <small>${o.created||''}</small>`;
+        const buyer = document.createElement('pre'); buyer.textContent = JSON.stringify(o.buyer||o.customer||{}, null, 2);
+        const items = document.createElement('pre'); items.textContent = JSON.stringify(o.items||[], null, 2);
+        const total = document.createElement('div'); total.innerHTML = `<strong>Total:</strong> ${o.total}`;
+        const status = document.createElement('input'); status.value = o.status || '';
+        const save = document.createElement('button'); save.textContent='Save';
+        save.addEventListener('click', async ()=>{
+          await updateOrder(o.id, { status: status.value });
+        });
+        wrap.appendChild(id); wrap.appendChild(buyer); wrap.appendChild(items); wrap.appendChild(total);
+        const srow = document.createElement('div'); srow.style.marginTop='8px'; srow.appendChild(status); srow.appendChild(save);
+        wrap.appendChild(srow);
+        container.appendChild(wrap);
+      });
+    }
+
+    async function updateOrder(id, changes){
+      const createClient = (window.supabase && window.supabase.createClient)
+        || (window.supabaseJs && window.supabaseJs.createClient)
+        || (window.Supabase && window.Supabase.createClient)
+        || (window.supabaseClient && window.supabaseClient.createClient);
+      if(!createClient) return alert('Supabase client library not loaded.');
+      const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      const { data, error } = await supabase.from('orders').update(changes).eq('id', id).select().single();
+      if(error) return alert('Update error: '+error.message);
+      alert('Order updated');
+      fetchOrders();
+    }
+
+    // initialize after DOM ready
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAdminOrders); else initAdminOrders();
+  </script>
+</body>
+</html>

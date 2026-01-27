@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="100%" height="100%" fill="#fffef7"/>
+  <g transform="translate(120,80)">
+    <rect x="120" y="80" width="160" height="120" rx="16" fill="#fff3f6" stroke="#ffd"/>
+    <circle cx="200" cy="140" r="20" fill="#ff7aa2"/>
+    <text x="0" y="320" font-family="Arial" font-size="32" fill="#333">Keychain Charms</text>
+  </g>
+</svg>

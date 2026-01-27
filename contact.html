@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Contact — Kids Crafts Shop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header"><h1>Contact</h1><nav><a href="index.html">Shop</a></nav></header>
+  <main style="padding:18px;max-width:720px;margin:0 auto">
+    <h2>Send a message</h2>
+    <form id="contactForm">
+      <label>Name<br><input name="name" required></label><br>
+      <label>Email<br><input name="email" type="email" required></label><br>
+      <label>Message<br><textarea name="message" required></textarea></label><br>
+      <button type="submit" class="btn-primary">Send</button>
+    </form>
+    <div id="result" style="margin-top:12px"></div>
+    <script>
+      const form = document.getElementById('contactForm');
+      form.addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(form).entries());
+        const contacts = JSON.parse(localStorage.getItem('contacts')||'[]');
+        contacts.push(Object.assign({created:new Date().toISOString()}, data));
+        localStorage.setItem('contacts', JSON.stringify(contacts));
+        document.getElementById('result').textContent = 'Message saved (demo). Thank you!';
+        form.reset();
+      });
+    </script>
+  </main>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Local Orders</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header"><h1>Admin — Local Orders</h1><nav><a href="index.html">Shop</a></nav></header>
+  <main style="padding:18px;max-width:1000px;margin:0 auto">
+    <div id="auth"></div>
+    <div id="orders"></div>
+  </main>
+
+  <script src="products.js"></script>
+  <script>
+    // Simple demo auth: prompt for password to show local orders (not secure, demo only)
+    const AUTH_PASS = 'admin';
+    const authEl = document.getElementById('auth');
+    function showLogin(){
+      authEl.innerHTML = '<label>Password: <input id="pw" type="password"> <button id="ok">Open</button></label>';
+      document.getElementById('ok').addEventListener('click', ()=>{
+        const v = document.getElementById('pw').value; if(v===AUTH_PASS) { authEl.innerHTML = '<p>Authenticated (demo)</p>'; loadOrders(); } else alert('Wrong password');
+      });
+    }
+
+    function getLocalOrders(){ try{return JSON.parse(localStorage.getItem('orders'))||[]}catch(e){return []} }
+    function saveLocalOrders(o){ localStorage.setItem('orders', JSON.stringify(o)); }
+
+    function loadOrders(){
+      const list = getLocalOrders(); const container = document.getElementById('orders'); container.innerHTML='';
+      if(list.length===0) return container.innerHTML = '<p>No local orders.</p>';
+      list.forEach((o,idx)=>{
+        const wrap = document.createElement('div'); wrap.style.border='1px solid #eee'; wrap.style.padding='12px'; wrap.style.marginBottom='12px';
+        const id = document.createElement('div'); id.innerHTML = `<strong>Order #${idx+1}</strong> <small>${o.created||''}</small>`;
+        const buyerForm = document.createElement('div'); buyerForm.innerHTML = `
+          <label>Name: <input class="b-name" value="${(o.buyer&&o.buyer.name)||''}"></label><br>
+          <label>Email: <input class="b-email" value="${(o.buyer&&o.buyer.email)||''}"></label><br>
+          <label>Address: <input class="b-address" value="${(o.buyer&&o.buyer.address)||''}"></label>
+        `;
+        const itemsPre = document.createElement('pre'); itemsPre.textContent = JSON.stringify(o.items||[], null, 2);
+        const saveBtn = document.createElement('button'); saveBtn.textContent='Save';
+        const delBtn = document.createElement('button'); delBtn.textContent='Delete'; delBtn.style.marginLeft='8px';
+        saveBtn.addEventListener('click', ()=>{
+          const buyers = { name: buyerForm.querySelector('.b-name').value, email: buyerForm.querySelector('.b-email').value, address: buyerForm.querySelector('.b-address').value };
+          o.buyer = buyers; const all = getLocalOrders(); all[idx]=o; saveLocalOrders(all); alert('Saved'); loadOrders();
+        });
+        delBtn.addEventListener('click', ()=>{ if(confirm('Delete this order?')){ const all=getLocalOrders(); all.splice(idx,1); saveLocalOrders(all); loadOrders(); }});
+        wrap.appendChild(id); wrap.appendChild(buyerForm); wrap.appendChild(itemsPre); wrap.appendChild(saveBtn); wrap.appendChild(delBtn);
+        container.appendChild(wrap);
+      });
+    }
+
+    showLogin();
+  </script>
+</body>
+</html>

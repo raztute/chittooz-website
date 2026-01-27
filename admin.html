@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - Add Product</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <script>
+    // Check admin session on page load
+    const ADMIN_SESSION_KEY = 'adminSession';
+    if(localStorage.getItem(ADMIN_SESSION_KEY) !== 'true'){
+      alert('Admin access required. Please login first.');
+      window.location.href = 'index.html';
+    }
+  </script>
+  
+  <header class="site-header">
+    <h1>Admin — Add Product</h1>
+    <nav>
+      <a href="index.html">Shop</a>
+      <button id="adminLogoutBtn" style="background-color:#e74c3c;color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:14px;margin-left:auto">🔒 Logout</button>
+    </nav>
+  </header>
+
+  <main style="padding:18px;max-width:720px;margin:0 auto">
+    <form id="productForm">
+      <input type="hidden" id="editingId" name="editingId" value="">
+      <label>Product ID (unique)<br><input name="id" required></label><br>
+      <label>Name<br><input name="name" required></label><br>
+      <label>Price<br><input name="price" type="number" step="0.01" required></label><br>
+      <label>Image URL (optional)<br><input name="image" placeholder="https://... or images/file.jpg"></label><br>
+      <label>Or upload image (optional)<br><input id="imageUpload" name="imageFile" type="file" accept="image/*"></label><br>
+      <small>Tip: paste an image URL (Unsplash/picsum), upload an image (stored as base64 in `localStorage`), or place a file under the `images/` folder and use `images/your-file.jpg`.</small><br>
+      <label>Description<br><textarea name="description"></textarea></label><br>
+      <button type="submit" class="btn-primary">Save Product</button>
+      <button type="button" id="cancelEdit" style="display:none;margin-left:8px">Cancel</button>
+    </form>
+    <div id="msg"></div>
+    <section style="margin-top:18px">
+      <h2>Current products</h2>
+      <div id="productList"></div>
+    </section>
+  </main>
+
+  <script>
+    const form=document.getElementById('productForm');
+    form.addEventListener('submit',(e)=>{
+      e.preventDefault();
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      const fileInput = document.getElementById('imageUpload');
+      const file = fileInput && fileInput.files && fileInput.files[0];
+
+      async function finalizeAndSave(imageValue){
+        if(imageValue) data.image = imageValue;
+
+        // If Supabase config + helpers are present, use them
+        if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.upsertProductToSupabase){
+          try{
+            // If a file was provided and upload helper exists, upload it and get public URL
+            if(file && window.uploadImageToSupabase){
+              const publicUrl = await window.uploadImageToSupabase(file);
+              if(publicUrl) data.image = publicUrl;
+            }
+            const editingId = document.getElementById('editingId').value;
+            if(editingId) data.id = editingId;
+            await window.upsertProductToSupabase(data);
+            document.getElementById('msg').textContent = 'Product saved to Supabase';
+            form.reset(); document.getElementById('editingId').value=''; form.elements['id'].disabled=false; document.getElementById('cancelEdit').style.display='none';
+            renderProductList();
+          }catch(err){
+            console.error(err);
+            document.getElementById('msg').textContent = 'Supabase save error: '+(err.message||err);
+          }
+          return;
+        }
+
+        // Fallback: save into localStorage merged products
+        const defaultProducts = Array.isArray(window.DEFAULT_PRODUCTS) ? window.DEFAULT_PRODUCTS.slice() : [];
+        let stored = null;
+        try{ stored = JSON.parse(localStorage.getItem('products')||'null'); }catch(e){ stored = null }
+        let products;
+        if(Array.isArray(stored)){
+          const storedIds = new Set(stored.map(p=>p.id));
+          products = stored.concat(defaultProducts.filter(p=>!storedIds.has(p.id)));
+        }else{
+          products = defaultProducts.slice();
+        }
+
+        const editingId = document.getElementById('editingId').value;
+        if(editingId){
+          const idx = products.findIndex(p=>p.id===editingId);
+          if(idx!==-1) products.splice(idx,1,data);
+        } else {
+          if(products.find(p=>p.id===data.id)){
+            return document.getElementById('msg').textContent = 'ID already exists';
+          }
+          products.push(data);
+        }
+
+        data.price = parseFloat(data.price)||0;
+        localStorage.setItem('products',JSON.stringify(products));
+        window.dispatchEvent(new StorageEvent('storage',{key:'products',newValue:JSON.stringify(products)}));
+        document.getElementById('msg').textContent = editingId ? 'Product updated' : 'Product added';
+        form.reset(); form.elements['id'].disabled=false; document.getElementById('cancelEdit').style.display='none';
+        renderProductList();
+      }
+
+      if(file && window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.uploadImageToSupabase){
+        // Supabase-enabled flow — finalize will upload inside
+        finalizeAndSave(null);
+      }else if(file){
+        const reader = new FileReader();
+        reader.onload = function(evt){ finalizeAndSave(evt.target.result); };
+        reader.onerror = function(){ document.getElementById('msg').textContent = 'Image read error'; finalizeAndSave(null); };
+        reader.readAsDataURL(file);
+      }else{
+        finalizeAndSave(data.image || null);
+      }
+    });
+
+    function loadMergedProducts(){
+      const defaultProducts = Array.isArray(window.DEFAULT_PRODUCTS) ? window.DEFAULT_PRODUCTS.slice() : [];
+      let stored = null;
+      try{ stored = JSON.parse(localStorage.getItem('products')||'null'); }catch(e){ stored = null }
+      if(Array.isArray(stored)){
+        const storedIds = new Set(stored.map(p=>p.id));
+        return stored.concat(defaultProducts.filter(p=>!storedIds.has(p.id)));
+      }
+      return defaultProducts.slice();
+    }
+
+    function renderProductList(){
+      const list = loadMergedProducts();
+      const container = document.getElementById('productList'); container.innerHTML='';
+      if(list.length===0) return container.textContent='(no products)';
+      list.forEach(p=>{
+        const row = document.createElement('div'); row.style.display='flex'; row.style.alignItems='center'; row.style.gap='12px'; row.style.padding='8px 0'; row.style.borderBottom='1px solid #f0f0f0';
+        const img = document.createElement('img'); img.src = p.image||''; img.alt=p.name||''; img.style.width='64px'; img.style.height='64px'; img.style.objectFit='cover'; img.style.borderRadius='6px';
+        const info = document.createElement('div'); info.innerHTML = `<strong>${p.name}</strong><br><small>${p.id} — $${(parseFloat(p.price)||0).toFixed(2)}</small>`;
+        const edit = document.createElement('button'); edit.textContent='Edit';
+        edit.addEventListener('click', ()=> startEdit(p.id));
+        const del = document.createElement('button'); del.textContent='Delete'; del.style.marginLeft='8px';
+        del.addEventListener('click', ()=>{ if(confirm('Delete product "'+p.name+'"?')) removeProduct(p.id); });
+        row.appendChild(img); row.appendChild(info); row.appendChild(edit); row.appendChild(del);
+        container.appendChild(row);
+      });
+    }
+
+    function startEdit(id){
+      const merged = loadMergedProducts();
+      const p = merged.find(x=>x.id===id);
+      if(!p) return alert('Product not found');
+      const form = document.getElementById('productForm');
+      form.elements['id'].value = p.id; form.elements['name'].value = p.name || '';
+      form.elements['price'].value = p.price || '';
+      form.elements['image'].value = p.image || '';
+      form.elements['description'].value = p.description || '';
+      document.getElementById('editingId').value = id;
+      // disable id editing to prevent conflicts
+      form.elements['id'].disabled = true;
+      document.getElementById('cancelEdit').style.display = 'inline-block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    document.getElementById('cancelEdit').addEventListener('click', ()=>{
+      const form = document.getElementById('productForm');
+      document.getElementById('editingId').value = '';
+      form.reset(); form.elements['id'].disabled = false;
+      document.getElementById('cancelEdit').style.display = 'none';
+    });
+
+    function removeProduct(id){
+      // remove id from stored products; if no stored array exists, build one from merged and remove
+      let stored = null;
+      try{ stored = JSON.parse(localStorage.getItem('products')||'null'); }catch(e){ stored = null }
+      if(!Array.isArray(stored)){
+        // build stored from merged products then remove
+        stored = loadMergedProducts();
+      }
+      const idx = stored.findIndex(p=>p.id===id);
+      if(idx !== -1){ stored.splice(idx,1); }
+      else {
+        // if not found, ensure it's removed if present in merged by filtering
+        stored = stored.filter(p=>p.id!==id);
+      }
+      localStorage.setItem('products', JSON.stringify(stored));
+      window.dispatchEvent(new StorageEvent('storage',{key:'products',newValue:JSON.stringify(stored)}));
+      renderProductList();
+      document.getElementById('msg').textContent = 'Product removed';
+    }
+
+    // initial render
+    renderProductList();
+    // If an ?id=... param is present, start editing that product
+    (function(){
+      try{
+        const params = new URLSearchParams(location.search);
+        const id = params.get('id');
+        if(id){
+          // slight delay to ensure UI is ready
+          setTimeout(()=> startEdit(id), 120);
+        }
+      }catch(e){/* ignore */}
+    })();
+
+    // Logout handler
+    const logoutBtn = document.getElementById('adminLogoutBtn');
+    if(logoutBtn){
+      logoutBtn.addEventListener('click', ()=>{
+        if(confirm('Logout from admin mode?')){
+          localStorage.removeItem('adminSession');
+          window.location.href = 'index.html';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
