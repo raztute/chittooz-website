@@ -112,6 +112,13 @@ async function renderProducts(){
       });
       meta.appendChild(editBtn);
     }
+    // Add Enquire button
+    const enquireBtn = node.querySelector('.enquire-btn');
+    if(enquireBtn){
+      enquireBtn.addEventListener('click', ()=>{
+        window.location.href = 'enquiry.html?product='+encodeURIComponent(p.name);
+      });
+    }
     productsEl.appendChild(node);
   });
 }

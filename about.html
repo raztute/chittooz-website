@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>About - Little Makers Jewelry</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .about-section {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 18px;
+      line-height: 1.8;
+    }
+    .about-section h1 {
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+    }
+    .about-section h2 {
+      color: #e74c3c;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      font-size: 1.5em;
+    }
+    .about-section p {
+      color: #555;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+    .tagline {
+      font-size: 18px;
+      font-weight: bold;
+      color: #e74c3c;
+      margin-top: 25px;
+      padding-top: 25px;
+      border-top: 2px solid #f0f0f0;
+    }
+    .values {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .value-card {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      border-left: 4px solid #e74c3c;
+    }
+    .value-card strong {
+      color: #e74c3c;
+      display: block;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Little Makers Jewelry</h1>
+    <p style="font-size:14px;color:#e74c3c;margin:5px 0 0 0">Handmade with tiny hands & big hearts ✨</p>
+    <nav class="nav">
+      <a href="index.html">Shop</a>
+      <a id="adminLink" href="admin.html" style="display:none">Sell (Admin)</a>
+      <a href="about.html" style="font-weight:bold;color:#e74c3c">About</a>
+      <a href="enquiry.html">Enquiry</a>
+      <a href="checkout.html">Checkout</a>
+      <button id="cartBtn">Cart (<span id="cart-count">0</span>)</button>
+      <button id="adminToggleBtn" style="background-color:#e74c3c;color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:14px;">🔓 Admin Login</button>
+      <button id="adminLogoutBtn" style="background-color:#e74c3c;color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:14px;display:none;">🔒 Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="about-section">
+      <h1>Our Story</h1>
+      
+      <p>Little Makers is a collection of handmade jewelry crafted by kids under gentle guidance. Each piece tells a story — bright colors, recycled beads, and a lot of joy. Buying supports creativity and teaches entrepreneurship to children.</p>
+
+      <h2>🎨 What We Do</h2>
+      <p>We believe every child has creative potential waiting to be discovered. Through making handmade crafts, kids learn valuable skills while creating beautiful pieces that bring joy to others.</p>
+
+      <h2>💚 Our Values</h2>
+      <div class="values">
+        <div class="value-card">
+          <strong>Handmade</strong>
+          <p>Every piece is crafted with care and attention by young hands</p>
+        </div>
+        <div class="value-card">
+          <strong>Ethical</strong>
+          <p>We use recycled materials and support sustainable practices</p>
+        </div>
+        <div class="value-card">
+          <strong>Heartfelt</strong>
+          <p>Each creation is made with love and genuine passion</p>
+        </div>
+      </div>
+
+      <h2>🌟 Why Buy From Us?</h2>
+      <ul style="color:#555;font-size:16px;line-height:1.8">
+        <li><strong>Support Kids:</strong> Your purchase directly supports children's creativity and entrepreneurship</li>
+        <li><strong>Unique Pieces:</strong> No two items are identical — each one is truly one-of-a-kind</li>
+        <li><strong>Eco-Friendly:</strong> We prioritize recycled and sustainable materials</li>
+        <li><strong>Make a Difference:</strong> Help teach kids that their creativity has real value</li>
+      </ul>
+
+      <div class="tagline">
+        Handmade. Ethical. Heartfelt.
+      </div>
+    </section>
+  </main>
+
+  <footer style="background-color:#f9f9f9;border-top:1px solid #eee;padding:20px;text-align:center;color:#666;margin-top:40px">
+    <p>© 2026 Little Makers Jewelry — Handmade with love</p>
+  </footer>
+
+  <script src="products.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

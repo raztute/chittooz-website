@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin - Add Product</title>
+  <title>Admin - Little Makers Jewelry</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,7 +17,8 @@
   </script>
   
   <header class="site-header">
-    <h1>Admin — Add Product</h1>
+    <h1>Little Makers Jewelry Admin</h1>
+    <p style="font-size:14px;color:#e74c3c;margin:5px 0 0 0">Manage Products</p>
     <nav>
       <a href="index.html">Shop</a>
       <button id="adminLogoutBtn" style="background-color:#e74c3c;color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:14px;margin-left:auto">🔒 Logout</button>
@@ -151,9 +152,12 @@
     }
 
     function startEdit(id){
+      console.log('startEdit called with id:', id);
+      console.log('DEFAULT_PRODUCTS:', window.DEFAULT_PRODUCTS);
       const merged = loadMergedProducts();
+      console.log('merged products:', merged);
       const p = merged.find(x=>x.id===id);
-      if(!p) return alert('Product not found');
+      if(!p) return alert('Product not found: '+id);
       const form = document.getElementById('productForm');
       form.elements['id'].value = p.id; form.elements['name'].value = p.name || '';
       form.elements['price'].value = p.price || '';
