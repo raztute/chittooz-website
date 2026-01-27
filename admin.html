@@ -42,6 +42,13 @@
   <script src="supabase-config.js"></script>
   <script src="supabase-products.js"></script>
   <script>
+    // Check admin authentication immediately
+    const ADMIN_SESSION_KEY = 'adminSession';
+    if(localStorage.getItem(ADMIN_SESSION_KEY) !== 'true'){
+      alert('Admin access required. Please login first.');
+      window.location.href = 'index.html';
+    }
+
     const form=document.getElementById('productForm');
     form.addEventListener('submit',(e)=>{
       e.preventDefault();
@@ -63,7 +70,17 @@
             }
             const editingId = document.getElementById('editingId').value;
             if(editingId) data.id = editingId;
-            await window.upsertProductToSupabase(data);
+            
+            // Filter out non-database fields before sending to Supabase
+            const productData = {
+              id: data.id,
+              name: data.name,
+              price: parseFloat(data.price) || 0,
+              image: data.image || null,
+              description: data.description || ''
+            };
+            
+            await window.upsertProductToSupabase(productData);
             document.getElementById('msg').textContent = 'Product saved to Supabase';
             form.reset(); document.getElementById('editingId').value=''; form.elements['id'].disabled=false; document.getElementById('cancelEdit').style.display='none';
             renderProductList();
@@ -215,7 +232,15 @@
         const products = loadMergedProducts();
         let synced = 0;
         for(const p of products){
-          await window.upsertProductToSupabase(p);
+          // Filter to only valid database fields
+          const productData = {
+            id: p.id,
+            name: p.name,
+            price: parseFloat(p.price) || 0,
+            image: p.image || null,
+            description: p.description || ''
+          };
+          await window.upsertProductToSupabase(productData);
           synced++;
         }
         document.getElementById('msg').textContent = `✓ ${synced} products synced to Supabase`;
@@ -251,13 +276,6 @@
           window.location.href = 'index.html';
         }
       });
-    }
-
-    // Check admin session at end
-    const ADMIN_SESSION_KEY = 'adminSession';
-    if(localStorage.getItem(ADMIN_SESSION_KEY) !== 'true'){
-      alert('Admin access required. Please login first.');
-      window.location.href = 'index.html';
     }
   </script>
 </body>
