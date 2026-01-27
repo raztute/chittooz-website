@@ -3,13 +3,18 @@
 // This file expects the UMD supabase client to be loaded (see checkout/admin pages).
 
 function _getSupabaseClient(){
+  // Return cached client if available
+  if(window.supabaseClient) return window.supabaseClient;
+  
+  // Otherwise try to create one
   const createClient = (window.supabase && window.supabase.createClient)
     || (window.supabaseJs && window.supabaseJs.createClient)
-    || (window.Supabase && window.Supabase.createClient)
-    || (window.supabaseClient && window.supabaseClient.createClient);
+    || (window.Supabase && window.Supabase.createClient);
   if(!createClient) throw new Error('Supabase client library not loaded');
   if(!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) throw new Error('Supabase config missing');
-  return createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  
+  window.supabaseClient = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  return window.supabaseClient;
 }
 
 async function fetchProductsFromSupabase(){

@@ -30,3 +30,11 @@ window.SUPABASE_FUNCTION_URL = ''; // optional: set to your function URL to send
 window.SUPABASE_URL = 'https://vcrbvxbqstbzweehysti.supabase.co';
 window.SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZjcmJ2eGJxc3RiendlZWh5c3RpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzNzM0ODUsImV4cCI6MjA4NDk0OTQ4NX0.vf6xGH2SefO4KVQ_ib_zWF38ZwBbV1WfSckwEtukKFE';
 window.SUPABASE_FUNCTION_URL = ''; // optional
+
+// Initialize Supabase client
+if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY){
+  // For CDN/UMD build, create client via window.supabase.createClient()
+  if(window.supabase && window.supabase.createClient){
+    window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  }
+}
