@@ -7,15 +7,6 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <script>
-    // Check admin session on page load
-    const ADMIN_SESSION_KEY = 'adminSession';
-    if(localStorage.getItem(ADMIN_SESSION_KEY) !== 'true'){
-      alert('Admin access required. Please login first.');
-      window.location.href = 'index.html';
-    }
-  </script>
-  
   <header class="site-header">
     <h1>Little Makers Jewelry Admin</h1>
     <p style="font-size:14px;color:#e74c3c;margin:5px 0 0 0">Manage Products</p>
@@ -220,6 +211,13 @@
           window.location.href = 'index.html';
         }
       });
+    }
+
+    // Check admin session at end
+    const ADMIN_SESSION_KEY = 'adminSession';
+    if(localStorage.getItem(ADMIN_SESSION_KEY) !== 'true'){
+      alert('Admin access required. Please login first.');
+      window.location.href = 'index.html';
     }
   </script>
 </body>

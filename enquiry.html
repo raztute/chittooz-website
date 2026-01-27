@@ -233,15 +233,17 @@
         localStorage.setItem('enquiries', JSON.stringify(enquiries));
       }catch(e){}
 
-      // Open email client
-      const subject = encodeURIComponent('Enquiry about: ' + product);
-      const body = encodeURIComponent(`Hi,\n\nI am interested in: ${product}\n\nName: ${name}\nEmail: ${email}\n\nMessage/Quantity:\n${message}`);
-      window.location.href = `mailto:contact@littlemakers.com?subject=${subject}&body=${body}`;
-
       // Show success message
       const msg = document.getElementById('enquiryMsg');
-      msg.textContent = 'Enquiry sent! Your email client is opening...';
+      msg.textContent = '✓ Enquiry saved! We will contact you soon at ' + email;
       msg.className = 'success';
+      
+      // Clear form
+      document.getElementById('enquiryForm').reset();
+      document.getElementById('enquiryProduct').value = product; // Keep product field
+      
+      // Hide message after 5 seconds
+      setTimeout(()=>{ msg.style.display = 'none'; }, 5000);
     });
 
     // Copy to clipboard
