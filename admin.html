@@ -32,11 +32,14 @@
     <div id="msg"></div>
     <section style="margin-top:18px">
       <h2>Current products</h2>
+      <button id="syncSupabaseBtn" style="background-color:#3498db;color:white;border:none;padding:10px 15px;border-radius:4px;cursor:pointer;font-size:14px;margin-bottom:15px;display:none">📤 Sync All Products to Supabase</button>
       <div id="productList"></div>
     </section>
   </main>
 
   <script src="products.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="supabase-products.js"></script>
   <script>
     const form=document.getElementById('productForm');
     form.addEventListener('submit',(e)=>{
@@ -190,6 +193,42 @@
 
     // initial render
     renderProductList();
+    
+    // Show Sync button if Supabase is configured
+    if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.upsertProductToSupabase){
+      document.getElementById('syncSupabaseBtn').style.display = 'inline-block';
+    }
+
+    // Sync all products to Supabase
+    document.getElementById('syncSupabaseBtn').addEventListener('click', async ()=>{
+      if(!window.upsertProductToSupabase){
+        alert('Supabase not configured');
+        return;
+      }
+      const syncBtn = document.getElementById('syncSupabaseBtn');
+      const originalText = syncBtn.textContent;
+      syncBtn.disabled = true;
+      syncBtn.textContent = 'Syncing...';
+      
+      try{
+        const products = loadMergedProducts();
+        let synced = 0;
+        for(const p of products){
+          await window.upsertProductToSupabase(p);
+          synced++;
+        }
+        document.getElementById('msg').textContent = `✓ ${synced} products synced to Supabase`;
+        document.getElementById('msg').style.color = 'green';
+      }catch(err){
+        document.getElementById('msg').textContent = 'Sync error: ' + err.message;
+        document.getElementById('msg').style.color = 'red';
+        console.error(err);
+      }finally{
+        syncBtn.disabled = false;
+        syncBtn.textContent = originalText;
+      }
+    });
+
     // If an ?id=... param is present, start editing that product
     (function(){
       try{
