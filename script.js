@@ -129,7 +129,18 @@ async function loadProductsAsync(){
   if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.fetchProductsFromSupabase){
     try{
       const remote = await window.fetchProductsFromSupabase();
-      if(Array.isArray(remote)) return remote;
+      if(Array.isArray(remote)){
+        // Merge Supabase products with localStorage products
+        // This ensures products in localStorage are included even if not synced yet
+        const stored = JSON.parse(localStorage.getItem('products')||'null');
+        if(Array.isArray(stored)){
+          const remoteIds = new Set(remote.map(p=>p.id));
+          // Add any localStorage products that aren't in Supabase yet
+          const merged = remote.concat(stored.filter(p=>!remoteIds.has(p.id)));
+          return merged;
+        }
+        return remote;
+      }
     }catch(e){ console.warn('Error fetching products from Supabase', e); }
   }
   // fallback to localStorage merged with defaults
