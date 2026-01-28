@@ -95,9 +95,9 @@
               products = defaultProducts.slice();
             }
             
-            const editingId = document.getElementById('editingId').value;
-            if(editingId){
-              const idx = products.findIndex(p=>p.id===editingId);
+            const editingId2 = document.getElementById('editingId').value;
+            if(editingId2){
+              const idx = products.findIndex(p=>p.id===editingId2);
               if(idx!==-1) products.splice(idx,1,productData);
             } else {
               if(products.find(p=>p.id===productData.id)){
