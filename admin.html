@@ -82,6 +82,32 @@
             };
             
             await window.upsertProductToSupabase(productData);
+            
+            // ALSO save to localStorage as a backup cache
+            const defaultProducts = Array.isArray(window.DEFAULT_PRODUCTS) ? window.DEFAULT_PRODUCTS.slice() : [];
+            let stored = null;
+            try{ stored = JSON.parse(localStorage.getItem('products')||'null'); }catch(e){ stored = null }
+            let products;
+            if(Array.isArray(stored)){
+              const storedIds = new Set(stored.map(p=>p.id));
+              products = stored.concat(defaultProducts.filter(p=>!storedIds.has(p.id)));
+            }else{
+              products = defaultProducts.slice();
+            }
+            
+            const editingId = document.getElementById('editingId').value;
+            if(editingId){
+              const idx = products.findIndex(p=>p.id===editingId);
+              if(idx!==-1) products.splice(idx,1,productData);
+            } else {
+              if(products.find(p=>p.id===productData.id)){
+                return document.getElementById('msg').textContent = 'ID already exists';
+              }
+              products.push(productData);
+            }
+            
+            localStorage.setItem('products',JSON.stringify(products));
+            
             document.getElementById('msg').textContent = 'Product saved to Supabase';
             // Reset form completely
             form.reset();
