@@ -97,6 +97,9 @@
       window.location.href = 'index.html';
     }
 
+    // Track which source enquiries came from (Supabase or localStorage)
+    let enquiriesSource = 'localStorage'; // 'supabase' or 'localStorage'
+
     // Load enquiries
     async function loadEnquiries(){
       const container = document.getElementById('enquiriesList');
@@ -114,6 +117,7 @@
             const { data, error } = await window.supabaseClient.from('enquiries').select('*').order('timestamp', {ascending: false});
             if(error) throw error;
             if(data && data.length > 0){
+              enquiriesSource = 'supabase';
               renderEnquiries(data);
               return;
             }
@@ -127,11 +131,13 @@
       try{
         const enquiries = JSON.parse(localStorage.getItem('enquiries')||'[]');
         if(enquiries.length > 0){
+          enquiriesSource = 'localStorage';
           renderEnquiries(enquiries);
           return;
         }
       }catch(e){}
 
+      enquiriesSource = 'localStorage';
       container.innerHTML = '<div class="no-enquiries">No enquiries yet</div>';
     }
 
@@ -148,6 +154,15 @@
         const date = new Date(enq.timestamp).toLocaleString();
         const item = document.createElement('div');
         item.className = 'enquiry-item';
+        
+        // Encode data for delete button - need to pass email for Supabase identification
+        const dataId = encodeURIComponent(JSON.stringify({
+          id: enq.id,
+          email: enq.email,
+          idx: idx,
+          name: enq.name
+        }));
+        
         item.innerHTML = `
           <h3>${enq.name} • ${enq.product}</h3>
           <div class="enquiry-meta">
@@ -159,7 +174,7 @@
           </div>
           <div class="enquiry-actions">
             <button class="btn-reply" onclick="replyEnquiry('${enq.email}', '${enq.name}', '${enq.product}')">Reply</button>
-            <button class="btn-delete" onclick="deleteEnquiry(${idx})">Delete</button>
+            <button class="btn-delete" onclick="deleteEnquiry('${dataId}')">Delete</button>
           </div>
         `;
         container.appendChild(item);
@@ -172,14 +187,28 @@
       window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     }
 
-    function deleteEnquiry(idx){
+    async function deleteEnquiry(dataStr){
       if(!confirm('Delete this enquiry?')) return;
+      
       try{
-        const enquiries = JSON.parse(localStorage.getItem('enquiries')||'[]');
-        enquiries.splice(idx, 1);
-        localStorage.setItem('enquiries', JSON.stringify(enquiries));
+        const data = JSON.parse(decodeURIComponent(dataStr));
+        
+        if(enquiriesSource === 'supabase' && window.supabaseClient && data.id){
+          // Delete from Supabase
+          const { error } = await window.supabaseClient.from('enquiries').delete().eq('id', data.id);
+          if(error) throw error;
+        } else {
+          // Delete from localStorage
+          const enquiries = JSON.parse(localStorage.getItem('enquiries')||'[]');
+          enquiries.splice(data.idx, 1);
+          localStorage.setItem('enquiries', JSON.stringify(enquiries));
+        }
+        
         loadEnquiries();
-      }catch(e){}
+      }catch(err){
+        console.error('Delete error:', err);
+        alert('Error deleting enquiry');
+      }
     }
 
     // Logout handler
