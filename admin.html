@@ -12,6 +12,7 @@
     <p style="font-size:14px;color:#e74c3c;margin:5px 0 0 0">Manage Products</p>
     <nav>
       <a href="index.html">Shop</a>
+      <a href="admin-enquiries.html">📧 Enquiries</a>
       <button id="adminLogoutBtn" style="background-color:#e74c3c;color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:14px;margin-left:auto">🔒 Logout</button>
     </nav>
   </header>
@@ -82,7 +83,13 @@
             
             await window.upsertProductToSupabase(productData);
             document.getElementById('msg').textContent = 'Product saved to Supabase';
-            form.reset(); document.getElementById('editingId').value=''; form.elements['id'].disabled=false; document.getElementById('cancelEdit').style.display='none';
+            // Reset form completely
+            form.reset();
+            document.getElementById('editingId').value='';
+            form.elements['id'].value = '';
+            form.elements['id'].disabled=false;
+            document.getElementById('cancelEdit').style.display='none';
+            document.getElementById('imageUpload').value = '';
             renderProductList();
           }catch(err){
             console.error(err);
@@ -118,7 +125,13 @@
         localStorage.setItem('products',JSON.stringify(products));
         window.dispatchEvent(new StorageEvent('storage',{key:'products',newValue:JSON.stringify(products)}));
         document.getElementById('msg').textContent = editingId ? 'Product updated' : 'Product added';
-        form.reset(); form.elements['id'].disabled=false; document.getElementById('cancelEdit').style.display='none';
+        // Reset form completely
+        form.reset();
+        document.getElementById('editingId').value='';
+        form.elements['id'].value = '';
+        form.elements['id'].disabled=false;
+        document.getElementById('cancelEdit').style.display='none';
+        document.getElementById('imageUpload').value = '';
         renderProductList();
       }
 

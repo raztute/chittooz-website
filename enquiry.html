@@ -219,33 +219,54 @@
     }
 
     // Enquiry form handler
-    document.getElementById('enquiryForm').addEventListener('submit', (e)=>{
+    document.getElementById('enquiryForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const product = document.getElementById('enquiryProduct').value;
       const name = document.getElementById('enquiryName').value;
       const email = document.getElementById('enquiryEmail').value;
       const message = document.getElementById('enquiryMessage').value;
+      const msg = document.getElementById('enquiryMsg');
 
-      // Save to localStorage
+      const enquiryData = {
+        product, name, email, message,
+        timestamp: new Date().toISOString()
+      };
+
+      // Try to save to Supabase first
+      if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY){
+        try{
+          if(!window.supabaseClient){
+            const createClient = window.supabase && window.supabase.createClient;
+            if(createClient){
+              window.supabaseClient = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            }
+          }
+          if(window.supabaseClient){
+            const { error } = await window.supabaseClient.from('enquiries').insert([enquiryData]);
+            if(error) throw error;
+            msg.textContent = '✓ Enquiry sent! Admin will respond soon.';
+            msg.className = 'success';
+            document.getElementById('enquiryForm').reset();
+            document.getElementById('enquiryProduct').value = product;
+            setTimeout(()=>{ msg.style.display = 'none'; }, 5000);
+            return;
+          }
+        }catch(err){
+          console.warn('Supabase save failed, falling back to localStorage', err);
+        }
+      }
+
+      // Fallback: save to localStorage
       try{
         let enquiries = JSON.parse(localStorage.getItem('enquiries')||'[]');
-        enquiries.push({
-          product, name, email, message,
-          timestamp: new Date().toISOString()
-        });
+        enquiries.push(enquiryData);
         localStorage.setItem('enquiries', JSON.stringify(enquiries));
       }catch(e){}
 
-      // Show success message
-      const msg = document.getElementById('enquiryMsg');
       msg.textContent = '✓ Enquiry saved! We will contact you soon at ' + email;
       msg.className = 'success';
-      
-      // Clear form
       document.getElementById('enquiryForm').reset();
-      document.getElementById('enquiryProduct').value = product; // Keep product field
-      
-      // Hide message after 5 seconds
+      document.getElementById('enquiryProduct').value = product;
       setTimeout(()=>{ msg.style.display = 'none'; }, 5000);
     });
 

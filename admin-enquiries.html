@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - Enquiries - Little Makers Jewelry</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .enquiries-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .enquiry-item {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-left: 4px solid #e74c3c;
+    }
+    .enquiry-item h3 {
+      margin: 0 0 8px 0;
+      color: #333;
+    }
+    .enquiry-meta {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 12px;
+    }
+    .enquiry-content {
+      background: white;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+    .enquiry-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .enquiry-actions button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-reply {
+      background-color: #27ae60;
+      color: white;
+    }
+    .btn-reply:hover {
+      background-color: #229954;
+    }
+    .btn-delete {
+      background-color: #e74c3c;
+      color: white;
+    }
+    .btn-delete:hover {
+      background-color: #c0392b;
+    }
+    .no-enquiries {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Little Makers Jewelry Admin</h1>
+    <p style="font-size:14px;color:#e74c3c;margin:5px 0 0 0">Customer Enquiries</p>
+    <nav>
+      <a href="index.html">Shop</a>
+      <a href="admin.html">Products</a>
+      <button id="adminLogoutBtn" style="background-color:#e74c3c;color:white;border:none;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:14px;margin-left:auto">🔒 Logout</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="enquiries-section">
+      <h2>Customer Enquiries</h2>
+      <p style="color:#666;font-size:14px">All customer enquiries are listed below. Click on a customer to reply.</p>
+      <div id="enquiriesList"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js?v=2"></script>
+  <script>
+    // Check admin authentication
+    const ADMIN_SESSION_KEY = 'adminSession';
+    if(localStorage.getItem(ADMIN_SESSION_KEY) !== 'true'){
+      alert('Admin access required. Please login first.');
+      window.location.href = 'index.html';
+    }
+
+    // Load enquiries
+    async function loadEnquiries(){
+      const container = document.getElementById('enquiriesList');
+      
+      // Try Supabase first
+      if(window.SUPABASE_URL && window.SUPABASE_ANON_KEY){
+        try{
+          if(!window.supabaseClient){
+            const createClient = window.supabase && window.supabase.createClient;
+            if(createClient){
+              window.supabaseClient = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+            }
+          }
+          if(window.supabaseClient){
+            const { data, error } = await window.supabaseClient.from('enquiries').select('*').order('timestamp', {ascending: false});
+            if(error) throw error;
+            if(data && data.length > 0){
+              renderEnquiries(data);
+              return;
+            }
+          }
+        }catch(err){
+          console.warn('Supabase load failed:', err);
+        }
+      }
+
+      // Fallback to localStorage
+      try{
+        const enquiries = JSON.parse(localStorage.getItem('enquiries')||'[]');
+        if(enquiries.length > 0){
+          renderEnquiries(enquiries);
+          return;
+        }
+      }catch(e){}
+
+      container.innerHTML = '<div class="no-enquiries">No enquiries yet</div>';
+    }
+
+    function renderEnquiries(enquiries){
+      const container = document.getElementById('enquiriesList');
+      container.innerHTML = '';
+      
+      if(!enquiries || enquiries.length === 0){
+        container.innerHTML = '<div class="no-enquiries">No enquiries yet</div>';
+        return;
+      }
+
+      enquiries.forEach((enq, idx) => {
+        const date = new Date(enq.timestamp).toLocaleString();
+        const item = document.createElement('div');
+        item.className = 'enquiry-item';
+        item.innerHTML = `
+          <h3>${enq.name} • ${enq.product}</h3>
+          <div class="enquiry-meta">
+            <strong>Email:</strong> <a href="mailto:${enq.email}">${enq.email}</a> | <strong>Date:</strong> ${date}
+          </div>
+          <div class="enquiry-content">
+            <strong>Message:</strong><br>
+            ${enq.message.replace(/\n/g, '<br>')}
+          </div>
+          <div class="enquiry-actions">
+            <button class="btn-reply" onclick="replyEnquiry('${enq.email}', '${enq.name}', '${enq.product}')">Reply</button>
+            <button class="btn-delete" onclick="deleteEnquiry(${idx})">Delete</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function replyEnquiry(email, name, product){
+      const subject = encodeURIComponent(`Re: ${product}`);
+      const body = encodeURIComponent(`Hi ${name},\n\nThank you for your enquiry about ${product}.\n\n`);
+      window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    }
+
+    function deleteEnquiry(idx){
+      if(!confirm('Delete this enquiry?')) return;
+      try{
+        const enquiries = JSON.parse(localStorage.getItem('enquiries')||'[]');
+        enquiries.splice(idx, 1);
+        localStorage.setItem('enquiries', JSON.stringify(enquiries));
+        loadEnquiries();
+      }catch(e){}
+    }
+
+    // Logout handler
+    document.getElementById('adminLogoutBtn').addEventListener('click', ()=>{
+      if(confirm('Logout from admin mode?')){
+        localStorage.removeItem('adminSession');
+        window.location.href = 'index.html';
+      }
+    });
+
+    // Load on page ready
+    loadEnquiries();
+  </script>
+</body>
+</html>
